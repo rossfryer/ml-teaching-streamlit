@@ -147,28 +147,20 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-st.markdown(
-    """
-    <div class="info-box">
-    <strong>What is logistic regression?</strong><br><br>
+with st.expander("What is logistic regression?", expanded=True):
+    st.markdown(
+        """
+        Logistic regression is used when the outcome is a **category** (class), not a continuous number.
 
-    Logistic regression is used when the outcome is a <strong>category</strong>, not a continuous number.
+        It predicts the **probability** that an example belongs to class 1 (e.g. *at risk*), which is always between **0** and **1**.
+        A **threshold** then converts probability into a final class prediction.
 
-    Instead of predicting a value such as a house price, it predicts the <strong>probability</strong>
-    that something belongs to a class.
-
-    For example:
-
-    - will a student be at risk or not at risk?
-    - will an email be spam or not spam?
-    - will a transaction be fraudulent or not fraudulent?
-
-    The model produces a probability between <strong>0</strong> and <strong>1</strong>.
-    A threshold is then used to convert that probability into a class prediction.
-    </div>
-    """,
-    unsafe_allow_html=True,
-)
+        Examples of classification problems:
+        - at risk / not at risk
+        - spam / not spam
+        - fraudulent / not fraudulent
+        """
+    )
 
 # -----------------------------
 # Sidebar controls
@@ -661,172 +653,160 @@ with st.expander("⚖️ Understanding precision vs recall"):
         """
     )
 
-# -----------------------------
-# Interactive confusion matrix
-# -----------------------------
+with st.expander("🎯 Confusion matrix (advanced)", expanded=False):
+    cm = confusion_matrix(y_test, pred_test, labels=[0, 1])
 
-st.markdown("## 🎯 Interactive confusion matrix")
+    true_negatives = cm[0, 0]
+    false_positives = cm[0, 1]
+    false_negatives = cm[1, 0]
+    true_positives = cm[1, 1]
 
-cm = confusion_matrix(y_test, pred_test, labels=[0, 1])
+    cm_col1, cm_col2 = st.columns([1, 1])
 
-true_negatives = cm[0, 0]
-false_positives = cm[0, 1]
-false_negatives = cm[1, 0]
-true_positives = cm[1, 1]
+    with cm_col1:
+        confusion_display = pd.DataFrame(
+            {
+                "Predicted Not At Risk": [true_negatives, false_negatives],
+                "Predicted At Risk": [false_positives, true_positives],
+            },
+            index=["Actual Not At Risk", "Actual At Risk"],
+        )
 
-cm_col1, cm_col2 = st.columns([1, 1])
+        st.dataframe(confusion_display, use_container_width=True)
 
-with cm_col1:
-    confusion_display = pd.DataFrame(
-        {
-            "Predicted Not At Risk": [true_negatives, false_negatives],
-            "Predicted At Risk": [false_positives, true_positives],
-        },
-        index=["Actual Not At Risk", "Actual At Risk"],
-    )
+    with cm_col2:
+        st.markdown(
+            f"""
+            <div class="info-box">
+            <strong>How to read this matrix</strong><br><br>
 
-    st.dataframe(confusion_display, use_container_width=True)
+            <strong>True negatives:</strong> {true_negatives}<br>
+            Students correctly predicted as not at risk.<br><br>
 
-with cm_col2:
+            <strong>True positives:</strong> {true_positives}<br>
+            At-risk students correctly identified.<br><br>
+
+            <strong>False positives:</strong> {false_positives}<br>
+            Students incorrectly flagged as at risk.<br><br>
+
+            <strong>False negatives:</strong> {false_negatives}<br>
+            At-risk students missed by the model.
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+
     st.markdown(
-        f"""
-        <div class="info-box">
-        <strong>How to read this matrix</strong><br><br>
-
-        <strong>True negatives:</strong> {true_negatives}<br>
-        Students correctly predicted as not at risk.<br><br>
-
-        <strong>True positives:</strong> {true_positives}<br>
-        At-risk students correctly identified.<br><br>
-
-        <strong>False positives:</strong> {false_positives}<br>
-        Students incorrectly flagged as at risk.<br><br>
-
-        <strong>False negatives:</strong> {false_negatives}<br>
-        At-risk students missed by the model.
+        """
+        <div class="warning-box">
+        <strong>Important:</strong><br>
+        In this example, a false negative may be more serious than a false positive because it means an at-risk student was missed.
         </div>
         """,
         unsafe_allow_html=True,
     )
 
-st.markdown(
-    """
-    <div class="warning-box">
-    <strong>Important:</strong><br>
-    In this example, a false negative may be more serious than a false positive because it means an at-risk student was missed.
-    </div>
-    """,
-    unsafe_allow_html=True,
-)
-
-# -----------------------------
-# Threshold impact graph
-# -----------------------------
-
-st.markdown("## 📉 Threshold slider impact graph")
-
-st.markdown(
-    """
-    This graph shows how the model's performance changes as the classification threshold changes.
-
-    Lower thresholds usually increase recall but may reduce precision.
-
-    Higher thresholds usually increase precision but may reduce recall.
-    """
-)
-
-threshold_values = np.arange(0.05, 0.96, 0.05)
-
-accuracy_scores = []
-precision_scores = []
-recall_scores = []
-f1_scores = []
-
-for t in threshold_values:
-    threshold_predictions = (prob_test >= t).astype(int)
-
-    accuracy_scores.append(accuracy_score(y_test, threshold_predictions))
-    precision_scores.append(precision_score(y_test, threshold_predictions, zero_division=0))
-    recall_scores.append(recall_score(y_test, threshold_predictions, zero_division=0))
-    f1_scores.append(f1_score(y_test, threshold_predictions, zero_division=0))
-
-threshold_df = pd.DataFrame(
-    {
-        "Threshold": threshold_values,
-        "Accuracy": accuracy_scores,
-        "Precision": precision_scores,
-        "Recall": recall_scores,
-        "F1 score": f1_scores,
-    }
-)
-
-fig, ax = plt.subplots(figsize=(9, 5.5))
-
-ax.plot(threshold_df["Threshold"], threshold_df["Accuracy"], label="Accuracy")
-ax.plot(threshold_df["Threshold"], threshold_df["Precision"], label="Precision")
-ax.plot(threshold_df["Threshold"], threshold_df["Recall"], label="Recall")
-ax.plot(threshold_df["Threshold"], threshold_df["F1 score"], label="F1 score")
-
-ax.axvline(
-    threshold,
-    linestyle="--",
-    label=f"Current threshold = {threshold:.2f}",
-)
-
-ax.set_title("How changing the threshold affects classification metrics")
-ax.set_xlabel("Classification threshold")
-ax.set_ylabel("Metric score")
-ax.set_ylim(0, 1.05)
-ax.grid(True, alpha=0.25)
-ax.legend()
-
-st.pyplot(fig)
-plt.close(fig)
-
-with st.expander("How to interpret the threshold graph", expanded=True):
+with st.expander("📉 How the threshold changes the metrics (advanced)", expanded=False):
     st.markdown(
         """
-        The threshold controls how cautious or aggressive the model is when predicting the At Risk class.
+        This graph shows how performance changes as the classification threshold changes.
 
-        If the threshold is low:
-
-        - the model predicts At Risk more often
-        - recall usually increases
-        - false positives may increase
-
-        If the threshold is high:
-
-        - the model predicts At Risk less often
-        - precision may increase
-        - false negatives may increase
-
-        In a student support system, recall may be especially important because missing an at-risk student could have serious consequences.
+        - Lower thresholds usually increase recall but may reduce precision.
+        - Higher thresholds usually increase precision but may reduce recall.
         """
     )
 
-st.markdown("### Threshold comparison table")
+    threshold_values = np.arange(0.05, 0.96, 0.05)
 
-st.dataframe(
-    threshold_df.round(3),
-    use_container_width=True,
-    hide_index=True,
-)
+    accuracy_scores = []
+    precision_scores = []
+    recall_scores = []
+    f1_scores = []
 
-with st.expander("Prediction table"):
-    prediction_table = pd.DataFrame(
+    for t in threshold_values:
+        threshold_predictions = (prob_test >= t).astype(int)
+
+        accuracy_scores.append(accuracy_score(y_test, threshold_predictions))
+        precision_scores.append(precision_score(y_test, threshold_predictions, zero_division=0))
+        recall_scores.append(recall_score(y_test, threshold_predictions, zero_division=0))
+        f1_scores.append(f1_score(y_test, threshold_predictions, zero_division=0))
+
+    threshold_df = pd.DataFrame(
         {
-            feature: X_test[feature].values,
-            "Actual class": y_test.values,
-            "Predicted probability": np.round(prob_test, 3),
-            "Predicted class": pred_test,
+            "Threshold": threshold_values,
+            "Accuracy": accuracy_scores,
+            "Precision": precision_scores,
+            "Recall": recall_scores,
+            "F1 score": f1_scores,
         }
     )
 
-    st.dataframe(
-        prediction_table,
-        use_container_width=True,
-        hide_index=True,
+    fig, ax = plt.subplots(figsize=(9, 5.5))
+
+    ax.plot(threshold_df["Threshold"], threshold_df["Accuracy"], label="Accuracy")
+    ax.plot(threshold_df["Threshold"], threshold_df["Precision"], label="Precision")
+    ax.plot(threshold_df["Threshold"], threshold_df["Recall"], label="Recall")
+    ax.plot(threshold_df["Threshold"], threshold_df["F1 score"], label="F1 score")
+
+    ax.axvline(
+        threshold,
+        linestyle="--",
+        label=f"Current threshold = {threshold:.2f}",
     )
+
+    ax.set_title("How changing the threshold affects classification metrics")
+    ax.set_xlabel("Classification threshold")
+    ax.set_ylabel("Metric score")
+    ax.set_ylim(0, 1.05)
+    ax.grid(True, alpha=0.25)
+    ax.legend()
+
+    st.pyplot(fig)
+    plt.close(fig)
+
+    t1, t2, t3 = st.tabs(["Interpretation", "Threshold table", "Prediction table"])
+
+    with t1:
+        st.markdown(
+            """
+            The threshold controls how cautious or aggressive the model is when predicting the At Risk class.
+
+            If the threshold is low:
+            - the model predicts At Risk more often
+            - recall usually increases
+            - false positives may increase
+
+            If the threshold is high:
+            - the model predicts At Risk less often
+            - precision may increase
+            - false negatives may increase
+
+            In a student support system, recall may be especially important because missing an at-risk student could have serious consequences.
+            """
+        )
+
+    with t2:
+        st.dataframe(
+            threshold_df.round(3),
+            use_container_width=True,
+            hide_index=True,
+        )
+
+    with t3:
+        prediction_table = pd.DataFrame(
+            {
+                feature: X_test[feature].values,
+                "Actual class": y_test.values,
+                "Predicted probability": np.round(prob_test, 3),
+                "Predicted class": pred_test,
+            }
+        )
+
+        st.dataframe(
+            prediction_table,
+            use_container_width=True,
+            hide_index=True,
+        )
 
 st.divider()
 
